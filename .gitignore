@@ -1,0 +1,58 @@
+# No .pyc files
+*.pyc
+
+local.py
+locustfile.py
+
+# Local environment file
+.env.local
+*.env
+
+# conf files
+/conf
+
+/scripts
+
+/settings/conf
+
+# DB Files
+db.sqlite3
+/pysqlite2-doc
+
+
+# CSV and Excel Files
+*.csv
+*.xlsx
+*.xls
+
+# Code editor files
+.vscode/
+.idea/
+media/*
+
+# Celery Files
+celerybeat.pid
+celerybeat-schedule
+
+# Log Files
+*.log
+
+# Log Rotate Files
+*.log.*
+
+# DS Store Files
+.DS_Store
+
+# Other Relevant Folders
+/bin
+/lib
+/include
+/local
+/README
+/LICENSE
+/devdocs
+/share
+_localdb/*
+venv/*
+
+.coverage
