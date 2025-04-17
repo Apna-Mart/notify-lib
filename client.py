@@ -1,16 +1,72 @@
-# notify_lib/client.py
+from typing import Dict, Any, Optional
 
-from config import NotifyConfig
-from notifiers.sms.providers.text_local_provider import TextLocalProvider
-from notifiers.email.providers.smtp_provider import SMTPProvider
+from factories.pusher_factory import PusherFactory
+from logger import logger
+from models.notifications import SmsNotification, EmailNotification, OtpNotification
+from sender import NotificationSender
+
 
 class NotificationClient:
-    def __init__(self, config: NotifyConfig):
-        self.sms = TextLocalProvider(config.sms.providers[0])
-        self.email = SMTPProvider(config.email.providers[0])
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        self.config = config or {}
+        logger.info("NotificationClient initialized")
 
-    def send_sms(self, to, message):
-        return self.sms.send(to, message)
+    def send_sms(self, notification: SmsNotification, priority: int = 1) -> Dict[str, Any]:
+        logger.info(f"Sending SMS notification with priority {priority}")
+        config = {"priority": priority}
+        if "credentials" in self.config:
+            config["credentials"] = self.config.get("credentials", {}).get("sms", {})
 
-    def send_email(self, to, message):
-        return self.email.send(to, message)
+        pusher = PusherFactory.create_pusher("sms", config)
+        sender = NotificationSender(pusher)
+        return sender.process(notification)
+
+    async def async_send_sms(self, notification: SmsNotification, priority: int = 1) -> Dict[str, Any]:
+        logger.info(f"Sending SMS notification asynchronously with priority {priority}")
+        config = {"priority": priority}
+        if "credentials" in self.config:
+            config["credentials"] = self.config.get("credentials", {}).get("sms", {})
+
+        pusher = PusherFactory.create_pusher("sms", config)
+        sender = NotificationSender(pusher)
+        return await sender.async_process(notification)
+
+    def send_email(self, notification: EmailNotification, priority: int = 1) -> Dict[str, Any]:
+        logger.info(f"Sending email notification with priority {priority}")
+        config = {"priority": priority}
+        if "credentials" in self.config:
+            config["credentials"] = self.config.get("credentials", {}).get("email", {})
+
+        pusher = PusherFactory.create_pusher("email", config)
+        sender = NotificationSender(pusher)
+        return sender.process(notification)
+
+    async def async_send_email(self, notification: EmailNotification, priority: int = 1) -> Dict[str, Any]:
+        logger.info(f"Sending email notification asynchronously with priority {priority}")
+        config = {"priority": priority}
+        if "credentials" in self.config:
+            config["credentials"] = self.config.get("credentials", {}).get("email", {})
+
+        pusher = PusherFactory.create_pusher("email", config)
+        sender = NotificationSender(pusher)
+        return await sender.async_process(notification)
+
+    def send_otp(self, notification: OtpNotification, priority: int = 1) -> Dict[str, Any]:
+        logger.info(f"Sending OTP notification with priority {priority}")
+        config = {"priority": priority}
+        if "credentials" in self.config:
+            config["credentials"] = self.config.get("credentials", {}).get("otp", {})
+
+        pusher = PusherFactory.create_pusher("otp", config)
+        sender = NotificationSender(pusher)
+        return sender.process(notification)
+
+    async def async_send_otp(self, notification: OtpNotification, priority: int = 1) -> Dict[str, Any]:
+        logger.info(f"Sending OTP notification asynchronously with priority {priority}")
+        config = {"priority": priority}
+        if "credentials" in self.config:
+            config["credentials"] = self.config.get("credentials", {}).get("otp", {})
+
+        pusher = PusherFactory.create_pusher("otp", config)
+        sender = NotificationSender(pusher)
+        return await sender.async_process(notification)
