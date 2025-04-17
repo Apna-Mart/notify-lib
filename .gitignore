@@ -3,6 +3,8 @@
 
 local.py
 locustfile.py
+test_all_vendors.py
+env.py
 
 # Local environment file
 .env.local

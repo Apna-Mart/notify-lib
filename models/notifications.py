@@ -1,5 +1,3 @@
-"""Notification model classes."""
-
 import uuid
 from typing import Optional
 

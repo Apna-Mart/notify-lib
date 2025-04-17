@@ -1,7 +1,7 @@
 import requests
 import aiohttp
 import asyncio
-from typing import Dict, Any,Literal
+from typing import Dict, Any, Literal
 
 from constants import MessageType
 from exceptions import VendorException
@@ -9,15 +9,15 @@ from logger import logger
 from vendors.interfaces.sms_vendor import SmsVendor
 
 
-class TwoFactorUnified(SmsVendor):
-
-    def __init__(self):
-        self.api_key = None
-        self.sender_id = None
+class TwoFactor(SmsVendor):
+    def __init__(self, credentials):
+        self.credentials = credentials
+        self.api_key = credentials.get("api_key") if credentials else None
+        self.sender_id = credentials.get("sender_id") if credentials else None
         self.api_url = "https://2factor.in/API/R1/"  # For SMS
         self.api_url_v1 = "https://2factor.in/API/V1/"  # For OTP
-        self.sms_type = "TRANS_SMS"  # Default to transactional
-        self.template_name = None
+        self.sms_type = credentials.get("sms_type", "TRANS_SMS")  # Default to transactional
+        self.template_name = credentials.get("template_name")
         self.batch_size = 1000
 
     def configure(self, config: Dict[str, Any]):

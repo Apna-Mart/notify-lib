@@ -4,10 +4,10 @@ from typing import Any
 from constants import MessageType
 from logger import logger
 from models.notifications import SmsNotification
-from pushers.base import NotificationPusher
+from services.base import NotificationService
 
 
-class SmsUnifiedPusher(NotificationPusher):
+class SmsService(NotificationService):
     def __init__(self, vendor):
         self.vendor = vendor
 

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from logger import logger
 
 
-class NotificationPusher(ABC):
+class NotificationService(ABC):
     @abstractmethod
     def send(self, notification):
         pass

@@ -2,12 +2,13 @@ import re
 from typing import Any
 from logger import logger
 from models.notifications import EmailNotification
-from pushers.base import NotificationPusher
+from services.base import NotificationService
 
 
-class EmailPusher(NotificationPusher):
-    def __init__(self, vendor):
-        self.vendor = vendor
+class EmailService(NotificationService):
+    def __init__(self, vendors):
+        self.vendors = vendors
+        self.vendor = vendors[0]
 
     def send(self, notification: EmailNotification) -> str:
         try:

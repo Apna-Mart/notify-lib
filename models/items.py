@@ -1,5 +1,3 @@
-"""Notification item classes."""
-
 from typing import Dict, Any, Optional
 
 

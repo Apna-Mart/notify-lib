@@ -1,4 +1,3 @@
-import os
 import asyncio
 from typing import Dict, Any
 
@@ -9,9 +8,9 @@ from vendors.interfaces.email_vendor import EmailVendor
 
 class SendGridEmail(EmailVendor):
 
-    def __init__(self):
-        self.api_key = None
-        self.from_email = None
+    def __init__(self, credentials):
+        self.api_key = credentials.get("api_key") if credentials else None
+        self.from_email = credentials.get("from_email") if credentials else None
         self.batch_size = 1000
 
         try:
@@ -40,9 +39,6 @@ class SendGridEmail(EmailVendor):
 
     def configure(self, config: Dict[str, Any]):
         self.api_key = config.get("api_key")
-        if not self.api_key:
-            self.api_key = os.environ.get("SENDGRID_API_KEY")
-
         self.from_email = config.get("from_email")
 
     def send(self, notification) -> str:

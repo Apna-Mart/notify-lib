@@ -3,6 +3,6 @@ class NotificationException(Exception):
         self.short_msg = short_msg
         super().__init__(message)
 
+
 class VendorException(NotificationException):
     pass
-

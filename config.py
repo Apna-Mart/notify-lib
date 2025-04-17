@@ -1,23 +1,21 @@
 from pydantic import BaseModel
-from typing import Dict, Optional
+from typing import List, Dict
+
 
 class ProviderConfig(BaseModel):
     name: str
     url: str
-    auth_token: Optional[str] = None
-    api_key: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
+    priority: int = 1
+    credentials: Dict
     max_retries: int = 3
     timeout: int = 30
 
 class SMSConfig(BaseModel):
-    providers: Dict[int, ProviderConfig]
+    providers: List[ProviderConfig]
 
 class EmailConfig(BaseModel):
-    providers: Dict[int, ProviderConfig]
+    providers: List[ProviderConfig]
 
 class NotifyConfig(BaseModel):
     sms: SMSConfig
     email: EmailConfig
-    default_priority: int = 1

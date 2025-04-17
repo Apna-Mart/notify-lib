@@ -1,5 +1,3 @@
-"""TextLocal vendor implementation for both SMS and OTP."""
-
 import requests
 import aiohttp
 import asyncio
@@ -11,11 +9,11 @@ from logger import logger
 from vendors.interfaces.sms_vendor import SmsVendor
 
 
-class TextLocalUnified(SmsVendor):
-    def __init__(self):
-        self.api_key = None
+class TextLocal(SmsVendor):
+    def __init__(self, credentials):
+        self.api_key = credentials.get("api_key") if credentials else None
         self.api_url = "https://api.textlocal.in/send/"
-        self.sender_id = None
+        self.sender_id = credentials.get("sender_id") if credentials else None
         self.batch_size = 1000
 
     def configure(self, config: Dict[str, Any]):
@@ -94,7 +92,7 @@ class TextLocalUnified(SmsVendor):
                 "apikey": self.api_key,
                 "numbers": item.recipient,
                 "message": item.message,
-                "sender": notification.sender_id or self.sender_id or "TXTLCL"
+                "sender": self.sender_id
             }
 
             async with session.post(self.api_url, data=payload, timeout=timeout) as response:
