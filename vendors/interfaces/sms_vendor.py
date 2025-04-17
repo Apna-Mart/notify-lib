@@ -3,7 +3,6 @@ from typing import Dict, Any
 
 
 class SmsVendor(ABC):
-
     @abstractmethod
     def configure(self, config: Dict[str, Any]):
         pass
@@ -15,3 +14,6 @@ class SmsVendor(ABC):
     @abstractmethod
     async def async_send(self, notification) -> str:
         pass
+
+    def supports_otp(self) -> bool:
+        return False

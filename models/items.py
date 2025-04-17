@@ -1,7 +1,10 @@
+"""Notification item classes."""
+
 from typing import Dict, Any, Optional
 
 
 class NotificationItem:
+
     def __init__(self, recipient: str, message: str):
         self.recipient = recipient
         self.message = message
@@ -11,9 +14,15 @@ class NotificationItem:
 
 
 class SmsItem(NotificationItem):
-    def __init__(self, phone_number: str, message: str):
+    def __init__(self, phone_number: str, message: str, otp: Optional[str] = None):
         super().__init__(phone_number, message)
         self.phone_number = phone_number
+        self.otp = otp
+
+    @classmethod
+    def create_otp(cls, phone_number: str, otp: str, message: str):
+        message = message
+        return cls(phone_number, message, otp)
 
 
 class EmailItem(NotificationItem):
@@ -22,11 +31,5 @@ class EmailItem(NotificationItem):
         self.email = email
         self.subject = subject
         self.variables = {}
-
-
-class OtpItem(NotificationItem):
-    def __init__(self, phone_number: str, otp: str, message: Optional[str] = None):
-        message = message or f"Your OTP is {otp}"
-        super().__init__(phone_number, message)
-        self.phone_number = phone_number
-        self.otp = otp
+        self.cc = []
+        self.bcc = []

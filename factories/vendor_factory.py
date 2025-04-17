@@ -1,48 +1,98 @@
+from typing import Dict, Any, Optional
+
+from constants import MessageType, Provider
+from logger import logger
 from vendors.implementations.email.sendgrid import SendGridEmail
-from vendors.implementations.otp.textlocal_otp import TextLocalOtp
-from vendors.implementations.sms.twofactor import TwoFactorSms
+from vendors.implementations.sms.textlocal import TextLocalUnified
+from vendors.implementations.sms.twofactor import TwoFactorUnified
 
 
-class VendorFactory:
-
+class UnifiedVendorFactory:
     VENDOR_MAPPINGS = {
-        "sms": {
-            1: "twofactor",
+        MessageType.TRANSACTIONAL.value: {
+            1: Provider.TWOFACTOR.value,
+            2: Provider.TEXTLOCAL.value,
         },
-        "email": {
-            1: "sendgrid",
-
+        MessageType.PROMOTIONAL.value: {
+            1: Provider.TWOFACTOR.value,
+            2: Provider.TEXTLOCAL.value,
         },
-        "otp": {
-            1: "textlocal",
-
+        MessageType.OTP.value: {
+            1: Provider.TWOFACTOR.value,
+            2: Provider.TEXTLOCAL.value,
         }
     }
 
+    EMAIL_VENDOR_MAPPINGS = {
+        1: Provider.SENDGRID.value,
+    }
+
     @staticmethod
-    def create_vendor(vendor_type, priority=1, config=None):
+    def create_vendor(message_type: str, priority: int = 1, config: Optional[Dict[str, Any]] = None):
+        logger.debug(f"Creating vendor for message type: {message_type}, priority: {priority}")
         config = config or {}
 
-        vendor_mappings = VendorFactory.VENDOR_MAPPINGS.get(vendor_type, {})
+        vendor_mappings = UnifiedVendorFactory.VENDOR_MAPPINGS.get(message_type, {})
         vendor_name = vendor_mappings.get(priority)
 
         if not vendor_name:
-            raise ValueError(f"No vendor configured for type {vendor_type} with priority {priority}")
+            logger.warning(f"No vendor configured for message type {message_type} with priority {priority}")
+            raise ValueError(f"No vendor configured for message type {message_type} with priority {priority}")
 
         vendor = None
 
-        if vendor_type == "sms":
-            if vendor_name == "twofactor":
-                vendor = TwoFactorSms()
-        elif vendor_type == "email":
-            if vendor_name == "sendgrid":
-                vendor = SendGridEmail()
-        elif vendor_type == "otp":
-            if vendor_name == "textlocal":
-                vendor = TextLocalOtp()
+        if vendor_name == Provider.TWOFACTOR.value:
+            vendor = TwoFactorUnified()
+            if message_type == MessageType.PROMOTIONAL.value:
+                vendor.set_sms_type("PROMO_SMS")
+            else:
+                vendor.set_sms_type("TRANS_SMS")
+        elif vendor_name == Provider.TEXTLOCAL.value:
+            vendor = TextLocalUnified()
 
         if vendor:
-            vendor.configure(config.get("credentials", {}))
+            creds = config.get("credentials", {}).get("sms", {})
+
+            if vendor_name == Provider.TEXTLOCAL.value and message_type == MessageType.OTP.value:
+                otp_creds = config.get("credentials", {}).get("otp", {})
+                if "textlocal_api_key" in otp_creds:
+                    creds = {
+                        "api_key": otp_creds.get("textlocal_api_key"),
+                        "sender_id": otp_creds.get("textlocal_sender_id")
+                    }
+
+            if vendor_name == Provider.TWOFACTOR.value and message_type == MessageType.OTP.value:
+                otp_creds = config.get("credentials", {}).get("otp", {})
+                if "template_name" in otp_creds:
+                    creds["template_name"] = otp_creds.get("template_name")
+
+            vendor.configure(creds)
+            logger.info(f"Created and configured {vendor_name} vendor for {message_type}")
             return vendor
 
-        raise ValueError(f"Vendor {vendor_name} for {vendor_type} not implemented")
+        logger.warning(f"Vendor {vendor_name} not implemented")
+        raise ValueError(f"Vendor {vendor_name} not implemented")
+
+    @staticmethod
+    def create_email_vendor(priority: int = 1, config: Optional[Dict[str, Any]] = None):
+        config = config or {}
+
+        vendor_name = UnifiedVendorFactory.EMAIL_VENDOR_MAPPINGS.get(priority)
+
+        if not vendor_name:
+            logger.warning(f"No email vendor configured with priority {priority}")
+            raise ValueError(f"No email vendor configured with priority {priority}")
+
+        vendor = None
+
+        if vendor_name == Provider.SENDGRID.value:
+            vendor = SendGridEmail()
+
+        if vendor:
+            creds = config.get("credentials", {}).get("email", {})
+            vendor.configure(creds)
+            logger.info(f"Created and configured {vendor_name} email vendor")
+            return vendor
+
+        logger.warning(f"Email vendor {vendor_name} not implemented")
+        raise ValueError(f"Email vendor {vendor_name} not implemented")

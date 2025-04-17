@@ -1,15 +1,17 @@
+"""TextLocal vendor implementation for both SMS and OTP."""
+
 import requests
 import aiohttp
 import asyncio
 from typing import Dict, Any
 
+from constants import MessageType
 from exceptions import VendorException
 from logger import logger
-from vendors.interfaces.otp_vendor import OtpVendor
+from vendors.interfaces.sms_vendor import SmsVendor
 
 
-class TextLocalOtp(OtpVendor):
-
+class TextLocalUnified(SmsVendor):
     def __init__(self):
         self.api_key = None
         self.api_url = "https://api.textlocal.in/send/"
@@ -20,10 +22,12 @@ class TextLocalOtp(OtpVendor):
         self.api_key = config.get("api_key")
         self.sender_id = config.get("sender_id")
 
+    def supports_otp(self) -> bool:
+        return True
+
     def send(self, notification) -> str:
         if not self.api_key:
             raise VendorException("VENDOR_CONFIG_ERROR", "TextLocal API key not configured")
-
         results = []
 
         for item in notification.items:
@@ -34,11 +38,11 @@ class TextLocalOtp(OtpVendor):
                     "apikey": self.api_key,
                     "numbers": item.recipient,
                     "message": item.message,
-                    "sender": self.sender_id or "TXTLCL"
+                    "sender": notification.sender_id or self.sender_id or "TXTLCL"
                 }
 
                 response = requests.post(self.api_url, data=payload, timeout=timeout)
-                response_data = response.json()
+                response_data = response.json() if response.text else {}
 
                 if response.status_code == 200 and "errors" not in response_data:
                     item.delivery_status = "SENT"
@@ -58,13 +62,13 @@ class TextLocalOtp(OtpVendor):
                     item.delivery_status = "FAILED"
                     item.error = error_msg
                     results.append(False)
-                    self.logger.warning(f"Failed to send OTP to {item.recipient}: {error_msg}")
+                    logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
 
             except Exception as e:
                 item.delivery_status = "FAILED"
                 item.error = str(e)
                 results.append(False)
-                self.logger.error(f"Error sending OTP to {item.recipient}: {str(e)}")
+                logger.error(f"Error sending SMS to {item.recipient}: {str(e)}")
 
         return "success" if all(results) else "batch not sent"
 
@@ -90,7 +94,7 @@ class TextLocalOtp(OtpVendor):
                 "apikey": self.api_key,
                 "numbers": item.recipient,
                 "message": item.message,
-                "sender": self.sender_id or "TXTLCL"
+                "sender": notification.sender_id or self.sender_id or "TXTLCL"
             }
 
             async with session.post(self.api_url, data=payload, timeout=timeout) as response:
@@ -118,20 +122,21 @@ class TextLocalOtp(OtpVendor):
 
                     item.delivery_status = "FAILED"
                     item.error = error_msg
-                    logger.warning(f"Failed to send OTP to {item.recipient}: {error_msg}")
+                    logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
                     return False
 
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
-            logger.error(f"Error sending OTP to {item.recipient}: {str(e)}")
+            logger.error(f"Error sending SMS to {item.recipient}: {str(e)}")
             return False
 
     async def async_send(self, notification) -> str:
         if not self.api_key:
             raise VendorException("VENDOR_CONFIG_ERROR", "TextLocal API key not configured")
 
-        logger.info(f"Sending {len(notification.items)} OTP messages via TextLocal")
+        msg_type = "OTP" if notification.message_type == MessageType.OTP.value else "SMS"
+        logger.info(f"Sending {len(notification.items)} {msg_type} messages via TextLocal")
 
         all_results = []
         for i in range(0, len(notification.items), self.batch_size):
@@ -143,5 +148,5 @@ class TextLocalOtp(OtpVendor):
 
         success = all(all_results)
         logger.info(
-            f"OTP batch processing complete. Success: {sum(all_results)}, Failed: {len(all_results) - sum(all_results)}")
+            f"{msg_type} batch processing complete. Success: {sum(all_results)}, Failed: {len(all_results) - sum(all_results)}")
         return "success" if success else "batch not sent"

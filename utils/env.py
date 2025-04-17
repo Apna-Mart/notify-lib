@@ -34,8 +34,10 @@ def get_config_from_env() -> Dict[str, Any]:
                 "sms_type": os.getenv("TWOFACTOR_SMS_TYPE", "TRANS_SMS")
             },
             "otp": {
-                "api_key": os.getenv("TEXTLOCAL_API_KEY"),
-                "sender_id": os.getenv("TEXTLOCAL_SENDER_ID")
+                "template_name": os.getenv("TWOFACTOR_OTP_TEMPLATE", ""),
+
+                "textlocal_api_key": os.getenv("TEXTLOCAL_API_KEY"),
+                "textlocal_sender_id": os.getenv("TEXTLOCAL_SENDER_ID")
             },
             "email": {
                 "api_key": os.getenv("SENDGRID_API_KEY"),

@@ -17,11 +17,7 @@ class SMSConfig(BaseModel):
 class EmailConfig(BaseModel):
     providers: Dict[int, ProviderConfig]
 
-class OTPConfig(BaseModel):
-    providers: Dict[int, ProviderConfig]
-
 class NotifyConfig(BaseModel):
     sms: SMSConfig
     email: EmailConfig
-    otp: OTPConfig
     default_priority: int = 1

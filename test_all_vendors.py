@@ -3,8 +3,9 @@ import os
 import sys
 
 from client import NotificationClient
-from models.items import OtpItem, SmsItem, EmailItem
-from models.notifications import OtpNotification, SmsNotification, EmailNotification
+from constants import MessageType
+from models.items import SmsItem, EmailItem
+from models.notifications import SmsNotification, EmailNotification
 from utils.env import get_config_from_env
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,12 +20,50 @@ async def test_textlocal_otp():
 
     client = NotificationClient(config)
 
-    notification = OtpNotification()
-    notification.add_item(OtpItem("9876543210", "123456"))
+    notification = SmsNotification(
+        sender_id=config['credentials']['otp'].get('textlocal_sender_id', 'TXTLCL'),
+        message_type=MessageType.OTP.value
+    )
 
-    result = await client.async_send_otp(notification)
+    otp_code = "123456"
+    otp_message = f"Your Apna Mart OTP is {otp_code}. It will expire in the next 5 mins:\nID: uKCuIPa/aTE"
 
-    logger.info(f"OTP Send Result: {result['success']}")
+    notification.add_item(SmsItem("8839000758", otp_message, otp_code))
+
+    result = await client.async_send_sms(notification, priority=2)
+
+    logger.info(f"TextLocal OTP Send Result: {result['success']}")
+    if not result['success']:
+        logger.error(f"Error: {result.get('error', 'Unknown error')}")
+    else:
+        for item_result in result.get('items', []):
+            logger.info(f"  - {item_result['recipient']}: {item_result['status']}")
+            if item_result['status'] != 'SENT':
+                logger.warning(f"    Error: {item_result.get('error', 'Unknown error')}")
+
+
+async def test_2factor_otp():
+    logger.info("=== Testing 2Factor OTP ===")
+
+    template_name = config['credentials']['otp'].get('template_name', '')
+
+    client = NotificationClient(config)
+
+    notification = SmsNotification(
+        sender_id=config['credentials']['sms'].get('sender_id', 'NOTIFY'),
+        message_type=MessageType.OTP.value
+    )
+
+    notification.template_name = template_name
+
+    phone_number = "9876543210"
+    otp_code = "123456"
+
+    notification.add_item(SmsItem(phone_number, f"Your verification code is {otp_code}", otp_code))
+
+    result = await client.async_send_sms(notification, priority=1)
+
+    logger.info(f"2Factor OTP Send Result: {result['success']}")
     if not result['success']:
         logger.error(f"Error: {result.get('error', 'Unknown error')}")
     else:
@@ -39,7 +78,10 @@ async def test_2factor_sms_transactional():
 
     client = NotificationClient(config)
 
-    notification = SmsNotification(sender_id=config['credentials']['sms'].get('sender_id', 'NOTIFY'))
+    notification = SmsNotification(
+        sender_id=config['credentials']['sms'].get('sender_id', 'NOTIFY'),
+        message_type=MessageType.TRANSACTIONAL.value
+    )
 
     notification.dlt_data = {
         "pe_id": "1234567890",
@@ -48,7 +90,7 @@ async def test_2factor_sms_transactional():
 
     notification.add_item(SmsItem("9876543210", "Your account has been verified successfully."))
 
-    result = await client.async_send_sms(notification)
+    result = await client.async_send_sms(notification, priority=1)
 
     logger.info(f"Transactional SMS Result: {result['success']}")
     if not result['success']:
@@ -68,11 +110,14 @@ async def test_2factor_sms_promotional():
 
     client = NotificationClient(promo_config)
 
-    notification = SmsNotification(sender_id=promo_config['credentials']['sms'].get('sender_id', 'NOTIFY'))
+    notification = SmsNotification(
+        sender_id=promo_config['credentials']['sms'].get('sender_id', 'NOTIFY'),
+        message_type=MessageType.PROMOTIONAL.value
+    )
 
     notification.add_item(SmsItem("9876543210", "Get 50% off on all products this weekend! Use code WEEKEND50"))
 
-    result = await client.async_send_sms(notification)
+    result = await client.async_send_sms(notification, priority=1)
 
     logger.info(f"Promotional SMS Result: {result['success']}")
     if not result['success']:
@@ -124,16 +169,20 @@ async def test_batch_processing():
 
     client = NotificationClient(config)
 
-    notification = OtpNotification()
+    notification = SmsNotification(
+        sender_id=config['credentials']['sms'].get('sender_id', 'NOTIFY'),
+        message_type=MessageType.OTP.value
+    )
 
-    for i in range(1, 2501):
-        phone = f"9999{i:06d}"
-        otp = f"{i % 1000:03d}"
-        notification.add_item(OtpItem(phone, otp))
+    for i in range(1, 10):
+        phone = "8839000758"
+        otp = f"{100000 + (i % 900000):06d}"
+        message = f"Your Apna Mart OTP is {otp}. It will expire in the next 5 mins: ID: uKCuIPa/aTE"
+        notification.add_item(SmsItem(phone, message, otp))
 
     logger.info(f"Created notification with {len(notification.items)} recipients")
 
-    result = await client.async_send_otp(notification)
+    result = await client.async_send_sms(notification)
 
     logger.info(f"Batch Processing Result: {result['success']}")
     if not result['success']:
@@ -147,6 +196,8 @@ async def test_batch_processing():
 async def run_all_tests():
     try:
         await test_textlocal_otp()
+
+        await test_2factor_otp()
 
         await test_2factor_sms_transactional()
 

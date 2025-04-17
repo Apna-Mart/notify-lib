@@ -1,8 +1,11 @@
+"""Notification model classes."""
+
 import uuid
 from typing import Optional
 
 
 class Notification:
+
     def __init__(self, id: Optional[str] = None):
         self.id = id or str(uuid.uuid4())
         self.items = []
@@ -11,13 +14,17 @@ class Notification:
 
     def add_item(self, item):
         self.items.append(item)
+        return self
 
 
 class SmsNotification(Notification):
-    def __init__(self, sender_id: Optional[str] = None, id: Optional[str] = None):
+    def __init__(self, sender_id: Optional[str] = None, id: Optional[str] = None, message_type: str = "transactional"):
         super().__init__(id)
         self.sender_id = sender_id
         self.is_unicode = False
+        self.message_type = message_type
+        self.dlt_data = {}  # For DLT compliance data
+        self.template_name = None  # For OTP template
 
 
 class EmailNotification(Notification):
@@ -27,9 +34,3 @@ class EmailNotification(Notification):
         self.subject = subject
         self.html_content = None
         self.plain_text = None
-
-
-class OtpNotification(Notification):
-    def __init__(self, id: Optional[str] = None):
-        super().__init__(id)
-        self.is_unicode = False
