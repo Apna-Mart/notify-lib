@@ -1,7 +1,7 @@
 import requests
 import aiohttp
 import asyncio
-from typing import Dict, Any, Literal
+from typing import Dict, Any
 
 from constants import MessageType
 from exceptions import VendorException
@@ -20,16 +20,13 @@ class TwoFactor(SmsVendor):
         self.template_name = credentials.get("template_name")
         self.batch_size = 1000
 
-    def configure(self, config: Dict[str, Any]):
-        self.api_key = config.get("api_key")
-        self.sender_id = config.get("sender_id")
-        self.sms_type = config.get("sms_type", "TRANS_SMS")
-        self.template_name = config.get("template_name", "")
-
-    def set_sms_type(self, sms_type: Literal["TRANS_SMS", "PROMO_SMS"]):
-        if sms_type not in ["TRANS_SMS", "PROMO_SMS"]:
-            raise ValueError("SMS type must be either 'TRANS_SMS' or 'PROMO_SMS'")
-        self.sms_type = sms_type
+    def set_sms_type(self, sms_type):
+        if sms_type == MessageType.TRANSACTIONAL.value:
+            self.sms_type = "TRANS_SMS"
+        elif sms_type == MessageType.PROMOTIONAL.value:
+            self.sms_type = "PROMO_SMS"
+        else:
+            raise ValueError(f"Unsupported message type: {sms_type}")
 
     def supports_otp(self) -> bool:
         return True

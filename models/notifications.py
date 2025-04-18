@@ -1,14 +1,14 @@
 import uuid
-from typing import Optional
+from typing import Optional, List, Dict
 
 
 class Notification:
 
     def __init__(self, id: Optional[str] = None):
-        self.id = id or str(uuid.uuid4())
-        self.items = []
-        self.original_list = []
-        self.credentials = {}
+        self.id: str = id or str(uuid.uuid4())
+        self.items: List = []
+        self.original_list: List = []
+        self.credentials: Dict = {}
 
     def add_item(self, item):
         self.items.append(item)

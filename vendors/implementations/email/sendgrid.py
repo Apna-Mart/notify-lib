@@ -37,10 +37,6 @@ class SendGridEmail(EmailVendor):
             self.sendgrid = None
             self.sg_client_class = None
 
-    def configure(self, config: Dict[str, Any]):
-        self.api_key = config.get("api_key")
-        self.from_email = config.get("from_email")
-
     def send(self, notification) -> str:
         if not self.sendgrid:
             raise VendorException("VENDOR_DEPENDENCY_ERROR", "SendGrid package not installed")

@@ -1,6 +1,4 @@
 pydantic~=2.11.2
 requests~=2.32.3
 setuptools~=68.2.0
-python-http-client~=3.3.7
 sendgrid~=6.11.0
-starkbank-ecdsa~=2.2.0

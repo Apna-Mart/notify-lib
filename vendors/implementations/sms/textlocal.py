@@ -16,10 +16,6 @@ class TextLocal(SmsVendor):
         self.sender_id = credentials.get("sender_id") if credentials else None
         self.batch_size = 1000
 
-    def configure(self, config: Dict[str, Any]):
-        self.api_key = config.get("api_key")
-        self.sender_id = config.get("sender_id")
-
     def supports_otp(self) -> bool:
         return True
 

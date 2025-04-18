@@ -8,8 +8,9 @@ from services.base import NotificationService
 
 
 class SmsService(NotificationService):
-    def __init__(self, vendor):
-        self.vendor = vendor
+    def __init__(self, vendors):
+        self.vendors = vendors
+        self.vendor = vendors[0]
 
     def send(self, notification: SmsNotification) -> str:
         try:

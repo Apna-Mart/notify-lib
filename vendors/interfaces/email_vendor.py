@@ -1,11 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
 
 
 class EmailVendor(ABC):
-    @abstractmethod
-    def configure(self, config: Dict[str, Any]):
-        pass
 
     @abstractmethod
     def send(self, notification) -> str:
