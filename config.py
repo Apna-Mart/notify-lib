@@ -1,11 +1,14 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
+
 
 class ProviderConfig(BaseModel):
     name: str
     url: str
-    auth_token: str
+    priority: int = 1
+    credentials: Dict
     max_retries: int = 3
+    timeout: int = 30
 
 class SMSConfig(BaseModel):
     providers: List[ProviderConfig]
@@ -13,17 +16,6 @@ class SMSConfig(BaseModel):
 class EmailConfig(BaseModel):
     providers: List[ProviderConfig]
 
-class FCMConfig(BaseModel):
-    api_key: str
-
-class MQTTConfig(BaseModel):
-    broker_url: str
-    port: int
-    username: str
-    password: str
-
 class NotifyConfig(BaseModel):
     sms: SMSConfig
     email: EmailConfig
-    fcm: FCMConfig
-    mqtt: MQTTConfig
