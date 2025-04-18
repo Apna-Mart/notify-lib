@@ -1,6 +1,5 @@
 import re
 from typing import Any
-from logger import logger
 from models.notifications import EmailNotification
 from services.base import NotificationService
 
@@ -12,36 +11,28 @@ class EmailService(NotificationService):
 
     def send(self, notification: EmailNotification) -> str:
         try:
-            logger.info(f"Sending {len(notification.items)} email messages")
             return self.vendor.send(notification)
         except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
             raise
 
     async def async_send(self, notification: EmailNotification) -> str:
         try:
-            logger.info(f"Sending {len(notification.items)} email messages asynchronously")
             return await self.vendor.async_send(notification)
         except Exception as e:
-            logger.error(f"Error sending email asynchronously: {str(e)}")
             raise
 
     def safety_check(self, notification: EmailNotification) -> bool:
         if not notification.items:
-            logger.warning("Email notification has no items")
             return False
 
         if not self._is_valid_email(notification.from_email):
-            logger.warning(f"Invalid from_email: {notification.from_email}")
             return False
 
         if not notification.subject:
-            logger.warning("Email notification has no subject")
             return False
 
         for item in notification.items:
             if not self._is_valid_email(item.recipient):
-                logger.warning(f"Invalid recipient email: {item.recipient}")
                 return False
 
         return True

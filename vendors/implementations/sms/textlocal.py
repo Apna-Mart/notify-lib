@@ -1,11 +1,9 @@
 import requests
 import aiohttp
 import asyncio
-from typing import Dict, Any
 
 from constants import MessageType
 from exceptions import VendorException
-from logger import logger
 from vendors.interfaces.sms_vendor import SmsVendor
 
 
@@ -56,13 +54,11 @@ class TextLocal(SmsVendor):
                     item.delivery_status = "FAILED"
                     item.error = error_msg
                     results.append(False)
-                    logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
 
             except Exception as e:
                 item.delivery_status = "FAILED"
                 item.error = str(e)
                 results.append(False)
-                logger.error(f"Error sending SMS to {item.recipient}: {str(e)}")
 
         return "success" if all(results) else "batch not sent"
 
@@ -97,7 +93,6 @@ class TextLocal(SmsVendor):
                     response_data = await response.json()
                 except:
                     response_data = {}
-                    logger.warning(f"Failed to parse JSON response: {response_text}")
 
                 if response.status == 200 and "errors" not in response_data:
                     item.delivery_status = "SENT"
@@ -116,13 +111,11 @@ class TextLocal(SmsVendor):
 
                     item.delivery_status = "FAILED"
                     item.error = error_msg
-                    logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
                     return False
 
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
-            logger.error(f"Error sending SMS to {item.recipient}: {str(e)}")
             return False
 
     async def async_send(self, notification) -> str:
@@ -130,17 +123,13 @@ class TextLocal(SmsVendor):
             raise VendorException("VENDOR_CONFIG_ERROR", "TextLocal API key not configured")
 
         msg_type = "OTP" if notification.message_type == MessageType.OTP.value else "SMS"
-        logger.info(f"Sending {len(notification.items)} {msg_type} messages via TextLocal")
 
         all_results = []
         for i in range(0, len(notification.items), self.batch_size):
             batch = notification.items[i:i + self.batch_size]
-            logger.info(f"Processing batch {i // self.batch_size + 1}: {len(batch)} messages")
 
             batch_results = await self.send_batch(batch, notification)
             all_results.extend(batch_results)
 
         success = all(all_results)
-        logger.info(
-            f"{msg_type} batch processing complete. Success: {sum(all_results)}, Failed: {len(all_results) - sum(all_results)}")
         return "success" if success else "batch not sent"

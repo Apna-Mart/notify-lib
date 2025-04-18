@@ -1,11 +1,9 @@
 import requests
 import aiohttp
 import asyncio
-from typing import Dict, Any
 
 from constants import MessageType
 from exceptions import VendorException
-from logger import logger
 from vendors.interfaces.sms_vendor import SmsVendor
 
 
@@ -78,7 +76,6 @@ class TwoFactor(SmsVendor):
                             item.delivery_status = "FAILED"
                             item.error = error_msg
                             results.append(False)
-                            logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
                     except (ValueError, KeyError) as e:
                         if "Success" in response.text:
                             item.delivery_status = "SENT"
@@ -88,18 +85,15 @@ class TwoFactor(SmsVendor):
                             item.delivery_status = "FAILED"
                             item.error = f"Invalid response: {response.text}"
                             results.append(False)
-                            logger.warning(f"Failed to parse 2Factor response for {item.recipient}: {response.text}")
                 else:
                     error_msg = f"2Factor API error: {response.status_code} - {response.text}"
                     item.delivery_status = "FAILED"
                     item.error = error_msg
                     results.append(False)
-                    logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
             except Exception as e:
                 item.delivery_status = "FAILED"
                 item.error = str(e)
                 results.append(False)
-                logger.error(f"Error sending SMS to {item.recipient}: {str(e)}")
 
         return "success" if all(results) else "batch not sent"
 
@@ -112,7 +106,6 @@ class TwoFactor(SmsVendor):
                     item.delivery_status = "FAILED"
                     item.error = "Missing OTP value"
                     results.append(False)
-                    logger.warning(f"Missing OTP for recipient: {item.recipient}")
                     continue
 
                 phone = item.recipient
@@ -134,41 +127,33 @@ class TwoFactor(SmsVendor):
                             item.delivery_status = "SENT"
                             item.ext_id = str(response_data.get("Details", ""))
                             results.append(True)
-                            logger.info(f"Successfully sent OTP to {item.recipient}")
                         else:
                             error_msg = response_data.get("Details", "Unknown error")
                             item.delivery_status = "FAILED"
                             item.error = error_msg
                             results.append(False)
-                            logger.warning(f"Failed to send OTP to {item.recipient}: {error_msg}")
                     except (ValueError, KeyError) as e:
                         if "Success" in response.text:
                             item.delivery_status = "SENT"
                             item.ext_id = "2factor_otp_sent"
                             results.append(True)
-                            logger.info(f"Successfully sent OTP to {item.recipient}")
                         else:
                             item.delivery_status = "FAILED"
                             item.error = f"Invalid response: {response.text}"
                             results.append(False)
-                            logger.warning(
-                                f"Failed to parse 2Factor OTP response for {item.recipient}: {response.text}")
                     except Exception as e:
                         item.delivery_status = "FAILED"
                         item.error = str(e)
                         results.append(False)
-                        logger.error(f"Error processing 2Factor OTP response for {item.recipient}: {str(e)}")
                 else:
                     error_msg = f"2Factor API error: {response.status_code} - {response.text}"
                     item.delivery_status = "FAILED"
                     item.error = error_msg
                     results.append(False)
-                    logger.warning(f"Failed to send OTP to {item.recipient}: {error_msg}")
             except Exception as e:
                 item.delivery_status = "FAILED"
                 item.error = str(e)
                 results.append(False)
-                logger.error(f"Error sending OTP to {item.recipient}: {str(e)}")
 
         return "success" if all(results) else "batch not sent"
 
@@ -224,7 +209,6 @@ class TwoFactor(SmsVendor):
                             error_msg = response_data.get("Details", "Unknown error")
                             item.delivery_status = "FAILED"
                             item.error = error_msg
-                            logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
                             return False
                     except (ValueError, KeyError) as e:
                         if "Success" in response_text:
@@ -234,18 +218,15 @@ class TwoFactor(SmsVendor):
                         else:
                             item.delivery_status = "FAILED"
                             item.error = f"Invalid response: {response_text}"
-                            logger.warning(f"Failed to parse 2Factor response for {item.recipient}: {response_text}")
                             return False
                 else:
                     error_msg = f"2Factor API error: {response.status} - {response_text}"
                     item.delivery_status = "FAILED"
                     item.error = error_msg
-                    logger.warning(f"Failed to send SMS to {item.recipient}: {error_msg}")
                     return False
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
-            logger.error(f"Error sending SMS to {item.recipient}: {str(e)}")
             return False
 
     async def _async_send_otp_single(self, session, item, notification):
@@ -253,7 +234,6 @@ class TwoFactor(SmsVendor):
             if not item.otp:
                 item.delivery_status = "FAILED"
                 item.error = "Missing OTP value"
-                logger.warning(f"Missing OTP for recipient: {item.recipient}")
                 return False
 
             phone = item.recipient
@@ -275,35 +255,29 @@ class TwoFactor(SmsVendor):
                         if response_data.get("Status") == "Success":
                             item.delivery_status = "SENT"
                             item.ext_id = str(response_data.get("Details", ""))
-                            logger.info(f"Successfully sent OTP to {item.recipient}")
                             return True
                         else:
                             error_msg = response_data.get("Details", "Unknown error")
                             item.delivery_status = "FAILED"
                             item.error = error_msg
-                            logger.warning(f"Failed to send OTP to {item.recipient}: {error_msg}")
                             return False
                     except (ValueError, KeyError) as e:
                         if "Success" in response_text:
                             item.delivery_status = "SENT"
                             item.ext_id = "2factor_otp_sent"
-                            logger.info(f"Successfully sent OTP to {item.recipient}")
                             return True
                         else:
                             item.delivery_status = "FAILED"
                             item.error = f"Invalid response: {response_text}"
-                            logger.warning(f"Failed to parse 2Factor response for {item.recipient}: {response_text}")
                             return False
                 else:
                     error_msg = f"2Factor API error: {response.status} - {response_text}"
                     item.delivery_status = "FAILED"
                     item.error = error_msg
-                    logger.warning(f"Failed to send OTP to {item.recipient}: {error_msg}")
                     return False
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
-            logger.error(f"Error sending OTP to {item.recipient}: {str(e)}")
             return False
 
     async def async_send(self, notification) -> str:
@@ -311,17 +285,12 @@ class TwoFactor(SmsVendor):
             raise VendorException("VENDOR_CONFIG_ERROR", "2Factor API key not configured")
 
         msg_type = "OTP" if notification.message_type == MessageType.OTP.value else "SMS"
-        logger.info(f"Sending {len(notification.items)} {msg_type} messages via 2Factor")
 
         all_results = []
         for i in range(0, len(notification.items), self.batch_size):
             batch = notification.items[i:i + self.batch_size]
-            logger.info(f"Processing batch {i // self.batch_size + 1}: {len(batch)} messages")
-
             batch_results = await self.send_batch(batch, notification)
             all_results.extend(batch_results)
 
         success = all(all_results)
-        logger.info(
-            f"{msg_type} batch processing complete. Success: {sum(all_results)}, Failed: {len(all_results) - sum(all_results)}")
         return "success" if success else "batch not sent"

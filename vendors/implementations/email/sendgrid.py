@@ -1,8 +1,6 @@
 import asyncio
-from typing import Dict, Any
 
 from exceptions import VendorException
-from logger import logger
 from vendors.interfaces.email_vendor import EmailVendor
 
 
@@ -33,7 +31,6 @@ class SendGridEmail(EmailVendor):
             self.disposition_class = Disposition
             self.content_id_class = ContentId
         except ImportError:
-            logger.warning("SendGrid package not installed. Please install with 'pip install sendgrid'")
             self.sendgrid = None
             self.sg_client_class = None
 
@@ -106,13 +103,11 @@ class SendGridEmail(EmailVendor):
                     item.delivery_status = "FAILED"
                     item.error = error_msg
                     results.append(False)
-                logger.warning(error_msg)
         except Exception as e:
             for item in notification.items:
                 item.delivery_status = "FAILED"
                 item.error = str(e)
                 results.append(False)
-            logger.error(f"Error sending email batch: {str(e)}")
 
         return "success" if all(results) else "batch not sent"
 
@@ -131,12 +126,10 @@ class SendGridEmail(EmailVendor):
         batch_notification.items = batch_items
 
         try:
-            logger.info(f"Processing batch of {len(batch_items)} emails")
             result = self.send(batch_notification)
             success = result == "success"
             return [getattr(item, 'delivery_status', 'SENT') == 'SENT' for item in batch_items]
         except Exception as e:
-            logger.error(f"Error processing email batch: {str(e)}")
             return [False] * len(batch_items)
 
     async def async_send(self, notification) -> str:
@@ -146,7 +139,6 @@ class SendGridEmail(EmailVendor):
         if not self.api_key:
             raise VendorException("VENDOR_CONFIG_ERROR", "SendGrid API key not configured")
 
-        logger.info(f"Sending {len(notification.items)} emails via SendGrid")
 
         all_results = []
 
@@ -157,7 +149,6 @@ class SendGridEmail(EmailVendor):
 
         tasks = []
         for i, batch in enumerate(batches):
-            logger.info(f"Preparing batch {i + 1}/{len(batches)}: {len(batch)} emails")
             task = self.process_batch(batch, notification)
             tasks.append(task)
 
@@ -165,12 +156,9 @@ class SendGridEmail(EmailVendor):
 
         for batch_result in batch_results:
             if isinstance(batch_result, Exception):
-                logger.error(f"Batch processing error: {str(batch_result)}")
                 all_results.extend([False] * self.batch_size)
             else:
                 all_results.extend(batch_result)
 
         success_count = sum(1 for r in all_results if r)
-        logger.info(
-            f"Email batch processing complete. Success: {success_count}, Failed: {len(all_results) - success_count}")
         return "success" if all(all_results) else "batch not sent"
