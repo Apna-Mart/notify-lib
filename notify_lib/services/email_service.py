@@ -1,7 +1,7 @@
 import re
 from typing import Any
-from models.notifications import EmailNotification
-from services.base import NotificationService
+from notify_lib.models.notifications import EmailNotification
+from notify_lib.services.base import NotificationService
 
 
 class EmailService(NotificationService):

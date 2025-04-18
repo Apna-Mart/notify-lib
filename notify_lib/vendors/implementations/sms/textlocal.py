@@ -2,9 +2,9 @@ import requests
 import aiohttp
 import asyncio
 
-from constants import MessageType
-from exceptions import VendorException
-from vendors.interfaces.sms_vendor import SmsVendor
+from notify_lib.constants import MessageType
+from notify_lib.exceptions import VendorException
+from notify_lib.vendors.interfaces.sms_vendor import SmsVendor
 
 
 class TextLocal(SmsVendor):

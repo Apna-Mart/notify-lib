@@ -11,7 +11,7 @@ A custom notification helper to allow sending notifications.
 Create a config object with your vendor credentials:
 
 ```python
-from config import NotifyConfig
+from notify_lib.config import NotifyConfig
 from notification_client import NotificationClient
 
 config = NotifyConfig(
@@ -39,7 +39,7 @@ client = NotificationClient(config)
 ## Send Email
 
 ```python
-from models.notifications import EmailNotification, EmailItem
+from notify_lib.models import EmailNotification, EmailItem
 
 notification = EmailNotification(
     from_email="noreply@yourcompany.com",
@@ -61,8 +61,8 @@ result = client.email.send(notification)
 ## Send SMS
 
 ```python
-from models.notifications import SmsNotification, SmsItem
-from constants import MessageType
+from notify_lib.models import SmsNotification, SmsItem
+from notify_lib.constants import MessageType
 
 notification = SmsNotification(
     sender_id="MYAPP",

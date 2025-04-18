@@ -1,8 +1,8 @@
-from config import NotifyConfig
-from constants import Channel
-from vendors.vendor_factory import VendorFactory
-from services.email_service import EmailService
-from services.sms_service import SmsService
+from notify_lib.config import NotifyConfig
+from notify_lib.constants import Channel
+from notify_lib.vendors.vendor_factory import VendorFactory
+from notify_lib.services.email_service import EmailService
+from notify_lib.services.sms_service import SmsService
 
 
 class ServiceFactory:

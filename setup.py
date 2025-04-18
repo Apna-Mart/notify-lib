@@ -12,7 +12,7 @@ setup(
     long_description_content_type='text/markdown',
     author="Mayank Jain",
     author_email="mayank@apnamart.in",
-    url="https://github.com/Apna-Mart/notify_lib",
+    url="https://github.com/Apna-Mart/notify-lib",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License"])

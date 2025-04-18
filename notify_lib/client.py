@@ -1,6 +1,6 @@
 from config import NotifyConfig
 from constants import Channel
-from services.service_factory import ServiceFactory
+from notify_lib.services.service_factory import ServiceFactory
 
 
 class NotificationClient:

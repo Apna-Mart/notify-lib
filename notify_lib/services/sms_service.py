@@ -1,8 +1,8 @@
 import re
 from typing import Any
-from constants import MessageType
-from models.notifications import SmsNotification
-from services.base import NotificationService
+from notify_lib.constants import MessageType
+from notify_lib.models.notifications import SmsNotification
+from notify_lib.services.base import NotificationService
 
 
 class SmsService(NotificationService):

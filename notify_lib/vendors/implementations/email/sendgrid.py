@@ -1,7 +1,7 @@
 import asyncio
 
-from exceptions import VendorException
-from vendors.interfaces.email_vendor import EmailVendor
+from notify_lib.exceptions import VendorException
+from notify_lib.vendors.interfaces.email_vendor import EmailVendor
 
 
 class SendGridEmail(EmailVendor):

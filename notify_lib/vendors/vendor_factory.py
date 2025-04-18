@@ -1,8 +1,8 @@
-from config import NotifyConfig
-from constants import Provider, Channel
-from vendors.implementations.email.sendgrid import SendGridEmail
-from vendors.implementations.sms.textlocal import TextLocal
-from vendors.implementations.sms.twofactor import TwoFactor
+from notify_lib.config import NotifyConfig
+from notify_lib.constants import Provider, Channel
+from notify_lib.vendors.implementations.email.sendgrid import SendGridEmail
+from notify_lib.vendors.implementations.sms.textlocal import TextLocal
+from notify_lib.vendors.implementations.sms.twofactor import TwoFactor
 
 
 class VendorFactory:
