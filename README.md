@@ -1,9 +1,16 @@
 # Notify Lib
-A custom notification helper to allow sending notifications
-**Setup Guide**
-**Configuration**
+
+A custom notification helper to allow sending notifications.
+
+---
+
+## Setup Guide
+
+### Configuration
+
 Create a config object with your vendor credentials:
 
+```python
 from config import NotifyConfig
 from notification_client import NotificationClient
 
@@ -25,9 +32,13 @@ config = NotifyConfig(
 )
 
 client = NotificationClient(config)
+```
 
-**Send Email**
+---
 
+## Send Email
+
+```python
 from models.notifications import EmailNotification, EmailItem
 
 notification = EmailNotification(
@@ -43,9 +54,13 @@ notification = EmailNotification(
 )
 
 result = client.email.send(notification)
+```
 
-**Send SMS**
+---
 
+## Send SMS
+
+```python
 from models.notifications import SmsNotification, SmsItem
 from constants import MessageType
 
@@ -61,9 +76,13 @@ notification = SmsNotification(
 )
 
 result = client.sms.send(notification)
+```
 
-**Send OTP**
+---
 
+## Send OTP
+
+```python
 notification = SmsNotification(
     sender_id="MYAPP",
     message_type=MessageType.OTP.value,
@@ -77,3 +96,4 @@ notification = SmsNotification(
 )
 
 result = client.sms.send(notification)
+```
