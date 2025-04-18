@@ -1,8 +1,9 @@
 # Notify Lib
 A custom notification helper to allow sending notifications
-Setup Guide
-Configuration
+**Setup Guide**
+**Configuration**
 Create a config object with your vendor credentials:
+
 from config import NotifyConfig
 from notification_client import NotificationClient
 
@@ -24,8 +25,10 @@ config = NotifyConfig(
 )
 
 client = NotificationClient(config)
-Send Email
-pythonfrom models.notifications import EmailNotification, EmailItem
+
+**Send Email**
+
+from models.notifications import EmailNotification, EmailItem
 
 notification = EmailNotification(
     from_email="noreply@yourcompany.com",
@@ -40,8 +43,10 @@ notification = EmailNotification(
 )
 
 result = client.email.send(notification)
-Send SMS
-pythonfrom models.notifications import SmsNotification, SmsItem
+
+**Send SMS**
+
+from models.notifications import SmsNotification, SmsItem
 from constants import MessageType
 
 notification = SmsNotification(
@@ -56,8 +61,10 @@ notification = SmsNotification(
 )
 
 result = client.sms.send(notification)
-Send OTP
-pythonnotification = SmsNotification(
+
+**Send OTP**
+
+notification = SmsNotification(
     sender_id="MYAPP",
     message_type=MessageType.OTP.value,
     items=[
@@ -70,12 +77,3 @@ pythonnotification = SmsNotification(
 )
 
 result = client.sms.send(notification)
-Supported Vendors
-Email
-
-SendGrid: Requires api_key and from_email
-
-SMS
-
-TextLocal: Requires api_key and sender_id
-2Factor: Requires api_key, sender_id, and optional template_name for OTP
