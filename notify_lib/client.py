@@ -1,5 +1,5 @@
-from config import NotifyConfig
-from constants import Channel
+from notify_lib.config import NotifyConfig
+from notify_lib.constants import Channel
 from notify_lib.services.service_factory import ServiceFactory
 
 
