@@ -16,9 +16,9 @@ class VendorFactory:
             sms_providers.sort(key = lambda x: x.priority)
             vendor_lst = []
             for e in sms_providers:
-                if e.name == Provider.TEXTLOCAL:
+                if e.name == Provider.TEXTLOCAL.value:
                     vendor_lst.append(TextLocal(e.credentials))
-                elif e.name == Provider.TWOFACTOR:
+                elif e.name == Provider.TWOFACTOR.value:
                     vendor_lst.append(TwoFactor(e.credentials))
                 else:
                     raise ValueError(f"Unknown Vendor {e.name} for channel {channel}")
@@ -30,7 +30,7 @@ class VendorFactory:
             email_providers.sort(key = lambda x: x.priority)
             vendor_lst = []
             for e in email_providers:
-                if e.name == Provider.SENDGRID:
+                if e.name == Provider.SENDGRID.value:
                     vendor_lst.append(SendGridEmail(e.credentials))
                 else:
                     raise ValueError(f"Unknown Vendor {e.name} for channel {channel}")
