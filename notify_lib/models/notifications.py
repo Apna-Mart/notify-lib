@@ -1,14 +1,14 @@
 import uuid
-from typing import Optional, List, Dict
+from typing import Optional, List
+
+from notify_lib.constants import MessageType
 
 
 class Notification:
 
-    def __init__(self, id: Optional[str] = None):
-        self.id: str = id or str(uuid.uuid4())
+    def __init__(self, identifier: Optional[str] = None):
+        self.identifier: str = identifier or str(uuid.uuid4())
         self.items: List = []
-        self.original_list: List = []
-        self.credentials: Dict = {}
 
     def add_item(self, item):
         self.items.append(item)
@@ -16,8 +16,11 @@ class Notification:
 
 
 class SmsNotification(Notification):
-    def __init__(self, sender_id: Optional[str] = None, id: Optional[str] = None, message_type: str = "transactional"):
-        super().__init__(id)
+    def __init__(
+            self, sender_id: Optional[str] = None,
+            identifier: Optional[str] = None,
+            message_type: MessageType = MessageType.TRANSACTIONAL.value):
+        super().__init__(identifier)
         self.sender_id = sender_id
         self.is_unicode = False
         self.message_type = message_type
@@ -26,8 +29,10 @@ class SmsNotification(Notification):
 
 
 class EmailNotification(Notification):
-    def __init__(self, from_email: Optional[str] = None, subject: Optional[str] = None, id: Optional[str] = None):
-        super().__init__(id)
+    def __init__(
+            self, from_email: Optional[str] = None,
+            subject: Optional[str] = None, identifier: Optional[str] = None):
+        super().__init__(identifier)
         self.from_email = from_email
         self.subject = subject
         self.html_content = None
