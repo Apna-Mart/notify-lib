@@ -12,22 +12,22 @@ class NotificationItem:
 
 
 class SmsItem(NotificationItem):
-    def __init__(self, phone_number: str, message: str, otp: Optional[str] = None):
+    def __init__(
+            self, phone_number: str, message: str, otp: Optional[str] = None,
+            template_name: Optional[str] = None, dlt_data: Optional[dict] = None):
         super().__init__(phone_number, message)
-        self.phone_number = phone_number
         self.otp = otp
-
-    @classmethod
-    def create_otp(cls, phone_number: str, otp: str, message: str):
-        message = message
-        return cls(phone_number, message, otp)
+        self.template_name = template_name
+        self.dlt_data = dlt_data
 
 
 class EmailItem(NotificationItem):
-    def __init__(self, email: str, message: str, subject: Optional[str] = None):
-        super().__init__(email, message)
-        self.email = email
+    def __init__(
+            self, to_email: str, message: str,
+            subject: Optional[str] = None, variables: Optional[dict] = None,
+            cc: Optional[list] = None, bcc: Optional[list] = None):
+        super().__init__(to_email, message)
         self.subject = subject
-        self.variables = {}
-        self.cc = []
-        self.bcc = []
+        self.variables = variables
+        self.cc = cc
+        self.bcc = bcc

@@ -17,18 +17,22 @@ class TwoFactor(SmsVendor):
         self.sender_id = credentials.get("sender_id") if credentials else None
         self.api_url = "https://2factor.in/API/R1/"  # For SMS
         self.api_url_v1 = "https://2factor.in/API/V1/"  # For OTP
-        self.sms_type = credentials.get("sms_type", "TRANS_SMS")  # Default to transactional
-        self.template_name = credentials.get("template_name")
         self.batch_size = 1000
+        self.sms_type = None
 
     def supports_otp(self) -> bool:
         return True
 
     def send(self, notification):
-        if notification.message_type == MessageType.OTP.value:
-            return self._send_otp(notification)
+        if notification.message_type == MessageType.TRANSACTIONAL.value:
+            self.sms_type = "TRANS_SMS"
+        elif notification.message_type == MessageType.PROMOTIONAL.value:
+            self.sms_type = "PROMO_SMS"
         else:
-            return self._send_sms(notification)
+            self.sms_type = "OTP"
+        if self.sms_type == "OTP":
+            return self._send_otp(notification)
+        return self._send_sms(notification)
 
     def _send_sms(self, notification) -> Notification:
         for item in notification.items:
@@ -89,7 +93,7 @@ class TwoFactor(SmsVendor):
                         phone = "+" + phone
                     else:
                         phone = "+91" + phone.lstrip("+")
-                template_part = f"/{self.template_name}" if self.template_name else ""
+                template_part = f"/{item.template_name}" if item.template_name else ""
                 api_url = f"{self.api_url_v1}{self.api_key}/SMS/{phone}/{item.otp}{template_part}"
                 response = requests.get(api_url)
                 if response.status_code == 200:
@@ -121,21 +125,21 @@ class TwoFactor(SmsVendor):
                 item.error = str(e)
         return notification
 
-    async def send_batch(self, items, notification):
+    async def send_batch(self, items):
         results = []
         async with aiohttp.ClientSession() as session:
             tasks = []
             for item in items:
-                if notification.message_type == MessageType.OTP.value and item.otp:
-                    task = self._async_send_otp_single(session, item, notification)
+                if self.sms_type == "OTP":
+                    task = self._async_send_otp_single(session, item)
                 else:
-                    task = self._async_send_sms_single(session, item, notification)
+                    task = self._async_send_sms_single(session, item)
                 tasks.append(task)
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             results.extend(batch_results)
         return results
 
-    async def _async_send_sms_single(self, session, item, notification):
+    async def _async_send_sms_single(self, session, item):
         try:
             phone = item.recipient
             if not phone.startswith("91") and not phone.startswith("+91"):
@@ -144,11 +148,11 @@ class TwoFactor(SmsVendor):
                 "module": self.sms_type,
                 "apikey": self.api_key,
                 "to": phone,
-                "from": notification.sender_id or self.sender_id or "HEADER",
+                "from": self.sender_id,
                 "msg": item.message
             }
-            if self.sms_type == "TRANS_SMS" and hasattr(notification, "dlt_data"):
-                dlt_data = getattr(notification, "dlt_data", {})
+            if self.sms_type == "TRANS_SMS" and hasattr(item, "dlt_data"):
+                dlt_data = getattr(item, "dlt_data", {})
                 if "pe_id" in dlt_data:
                     payload["peid"] = dlt_data["pe_id"]
                 if "template_id" in dlt_data:
@@ -182,7 +186,7 @@ class TwoFactor(SmsVendor):
             item.error = str(e)
             return item
 
-    async def _async_send_otp_single(self, session, item, notification):
+    async def _async_send_otp_single(self, session, item):
         try:
             if not item.otp:
                 item.delivery_status = "FAILED"
@@ -194,7 +198,7 @@ class TwoFactor(SmsVendor):
                     phone = "+" + phone
                 else:
                     phone = "+91" + phone.lstrip("+")
-            template_part = f"/{self.template_name}" if self.template_name else ""
+            template_part = f"/{item.template_name}" if item.template_name else ""
             api_url = f"{self.api_url_v1}{self.api_key}/SMS/{phone}/{item.otp}{template_part}"
             async with session.get(api_url) as response:
                 response_text = await response.text()
@@ -226,10 +230,16 @@ class TwoFactor(SmsVendor):
             return item
 
     async def async_send(self, notification):
+        if notification.message_type == MessageType.TRANSACTIONAL.value:
+            self.sms_type = "TRANS_SMS"
+        elif notification.message_type == MessageType.PROMOTIONAL.value:
+            self.sms_type = "PROMO_SMS"
+        else:
+            self.sms_type = "OTP"
         all_results = []
         for i in range(0, len(notification.items), self.batch_size):
             batch = notification.items[i:i + self.batch_size]
-            batch_results = await self.send_batch(batch, notification)
+            batch_results = await self.send_batch(batch)
             all_results.extend(batch_results)
         notification.items = all_results
         return notification
