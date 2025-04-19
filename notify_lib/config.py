@@ -4,7 +4,6 @@ from typing import List, Dict, Optional
 
 class ProviderConfig(BaseModel):
     name: str
-    url: str
     priority: Optional[int] = 1
     credentials: Optional[Dict]
     max_retries: Optional[int] = 3
