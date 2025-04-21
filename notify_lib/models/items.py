@@ -14,11 +14,12 @@ class NotificationItem:
 class SmsItem(NotificationItem):
     def __init__(
             self, phone_number: str, message: str, otp: Optional[str] = None,
-            template_name: Optional[str] = None, dlt_data: Optional[dict] = None):
+            template_name: Optional[str] = None, dlt_data: Optional[dict] = None, variables: Optional[dict] = None,):
         super().__init__(phone_number, message)
         self.otp = otp
         self.template_name = template_name
-        self.dlt_data = dlt_data
+        self.dlt_data = dlt_data,
+        self.variables = variables
 
 
 class EmailItem(NotificationItem):

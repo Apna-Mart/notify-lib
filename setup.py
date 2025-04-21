@@ -13,7 +13,7 @@ def parse_requirements(filename):
 
 setup(
     name="notify_lib",
-    version="1.0.0.3",
+    version="1.0.0.4",
     packages=find_packages(),
     include_package_data=True,
     install_requires=parse_requirements('requirements.txt'),
