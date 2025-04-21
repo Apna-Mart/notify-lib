@@ -34,7 +34,7 @@ class SendGridEmail(EmailVendor):
             self.sendgrid = None
             self.sg_client_class = None
 
-    def send(self, notification) -> str:
+    def send(self, notification):
         if not self.sendgrid:
             raise VendorException("VENDOR_DEPENDENCY_ERROR", "SendGrid package not installed")
 
@@ -45,12 +45,20 @@ class SendGridEmail(EmailVendor):
 
         from_email = self.email_class(notification.from_email or self.from_email)
 
-        mail = self.mail_class(from_email=from_email, subject=notification.subject)
+        mail = self.mail_class(from_email=from_email, subject="")
 
-        if notification.html_content:
-            mail.add_content(self.content_class("text/html", notification.html_content))
-        if notification.plain_text:
-            mail.add_content(self.content_class("text/plain", notification.plain_text))
+        if hasattr(notification, 'template_id') and notification.template_id:
+            mail.template_id = notification.template_id
+
+        if hasattr(notification, 'reply_to') and notification.reply_to:
+            mail.reply_to = self.email_class(notification.reply_to)
+
+        if hasattr(notification, 'send_at') and notification.send_at:
+            mail.send_at = notification.send_at
+
+        if hasattr(notification, 'categories') and notification.categories:
+            for category in notification.categories:
+                mail.add_category(category)
 
         if hasattr(notification, 'attachments') and notification.attachments:
             for attachment_data in notification.attachments:
@@ -65,29 +73,33 @@ class SendGridEmail(EmailVendor):
 
         for item in notification.items:
             personalization = self.personalization_class()
-            to_email = self.to_class(item.email)
+            to_email = self.to_class(item.recipient)
             personalization.add_to(to_email)
 
             if item.subject:
                 personalization.subject = item.subject
 
-            for key, value in item.variables.items():
-                personalization.add_dynamic_template_data({key: value})
+            if item.variables:
+                for key, value in item.variables.items():
+                    personalization.add_dynamic_template_data({key: value})
 
-            if hasattr(item, 'cc') and item.cc:
+            if item.cc:
                 for cc_email in item.cc:
                     personalization.add_cc(self.email_class(cc_email))
 
-            if hasattr(item, 'bcc') and item.bcc:
+            if item.bcc:
                 for bcc_email in item.bcc:
                     personalization.add_bcc(self.email_class(bcc_email))
 
+            if item.message:
+                content_type = "text/html"
+                if hasattr(item, 'is_html') and item.is_html is False:
+                    content_type = "text/plain"
+
+                content = self.content_class(content_type, item.message)
+                mail.add_content(content)
+
             mail.add_personalization(personalization)
-
-        if hasattr(notification, 'template_id') and notification.template_id:
-            mail.template_id = notification.template_id
-
-        results = []
 
         try:
             response = sg.client.mail.send.post(request_body=mail.get())
@@ -96,51 +108,56 @@ class SendGridEmail(EmailVendor):
                 for item in notification.items:
                     item.delivery_status = "SENT"
                     item.ext_id = str(response.headers.get("X-Message-Id", ""))
-                    results.append(True)
             else:
                 error_msg = f"SendGrid API error: {response.status_code} - {response.body}"
                 for item in notification.items:
                     item.delivery_status = "FAILED"
                     item.error = error_msg
-                    results.append(False)
         except Exception as e:
             for item in notification.items:
                 item.delivery_status = "FAILED"
                 item.error = str(e)
-                results.append(False)
 
-        return "success" if all(results) else "batch not sent"
+        return notification
 
     async def process_batch(self, batch_items, notification):
         batch_notification = type(notification)()
         batch_notification.from_email = notification.from_email
-        batch_notification.subject = notification.subject
-        batch_notification.html_content = notification.html_content
-        batch_notification.plain_text = notification.plain_text
 
         if hasattr(notification, 'template_id'):
             batch_notification.template_id = notification.template_id
+
+        if hasattr(notification, 'reply_to'):
+            batch_notification.reply_to = notification.reply_to
+
+        if hasattr(notification, 'send_at'):
+            batch_notification.send_at = notification.send_at
+
+        if hasattr(notification, 'categories'):
+            batch_notification.categories = notification.categories
+
         if hasattr(notification, 'attachments'):
             batch_notification.attachments = notification.attachments
 
         batch_notification.items = batch_items
 
         try:
-            result = self.send(batch_notification)
-            success = result == "success"
-            return [getattr(item, 'delivery_status', 'SENT') == 'SENT' for item in batch_items]
+            result_notification = self.send(batch_notification)
+            return result_notification
         except Exception as e:
-            return [False] * len(batch_items)
+            for item in batch_items:
+                item.delivery_status = "FAILED"
+                item.error = str(e)
+            return batch_items
 
-    async def async_send(self, notification) -> str:
+    async def async_send(self, notification):
         if not self.sendgrid:
             raise VendorException("VENDOR_DEPENDENCY_ERROR", "SendGrid package not installed")
 
         if not self.api_key:
             raise VendorException("VENDOR_CONFIG_ERROR", "SendGrid API key not configured")
 
-
-        all_results = []
+        all_items = []
 
         batches = []
         for i in range(0, len(notification.items), self.batch_size):
@@ -148,7 +165,7 @@ class SendGridEmail(EmailVendor):
             batches.append(batch)
 
         tasks = []
-        for i, batch in enumerate(batches):
+        for batch in batches:
             task = self.process_batch(batch, notification)
             tasks.append(task)
 
@@ -156,9 +173,13 @@ class SendGridEmail(EmailVendor):
 
         for batch_result in batch_results:
             if isinstance(batch_result, Exception):
-                all_results.extend([False] * self.batch_size)
+                for _ in range(min(self.batch_size, len(notification.items))):
+                    item = type(notification.items[0])("", "")
+                    item.delivery_status = "FAILED"
+                    item.error = str(batch_result)
+                    all_items.append(item)
             else:
-                all_results.extend(batch_result)
+                all_items.extend(batch_result)
 
-        success_count = sum(1 for r in all_results if r)
-        return "success" if all(all_results) else "batch not sent"
+        notification.items = all_items
+        return notification

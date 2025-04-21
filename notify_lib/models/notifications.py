@@ -19,9 +19,10 @@ class SmsNotification(Notification):
 
     def __init__(
             self, identifier: Optional[str] = None,
-            message_type: MessageType = MessageType.TRANSACTIONAL.value):
+            message_type: MessageType = MessageType.TRANSACTIONAL.value, sender_id: Optional[str] = None):
         super().__init__(identifier)
         self.message_type = message_type
+        self.sender_id = sender_id
 
 
 class EmailNotification(Notification):

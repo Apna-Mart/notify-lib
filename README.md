@@ -41,17 +41,14 @@ client = NotificationClient(config)
 ```python
 from notify_lib.models import EmailNotification, EmailItem
 
-notification = EmailNotification(
-    from_email="noreply@yourcompany.com",
-    subject="Welcome",
-    html_content="<p>Thank you for registering.</p>",
-    items=[
-        EmailItem(
-            recipient="user@example.com",
-            variables={"name": "John"}
-        )
-    ]
-)
+notification = EmailNotification(from_email="noreply@yourcompany.com")
+
+notification.add_item(EmailItem(
+    to_email="user@example.com",
+    message="<p>Thank you for registering.</p>",
+    subject="Welcome",  
+    variables={"name": "John"}
+))
 
 result = client.email.send(notification)
 ```
