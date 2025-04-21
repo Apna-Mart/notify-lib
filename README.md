@@ -11,29 +11,28 @@ A custom notification helper to allow sending notifications.
 Create a config object with your vendor credentials:
 
 ```python
-from notify_lib.config import NotifyConfig, ProviderConfig
-from notification_client import NotificationClient
+from notify_lib.config import NotifyConfig, ProviderConfig, SMSConfig, EmailConfig
+from notify_lib.client import NotificationClient
 
 config = NotifyConfig(
     sms=SMSConfig(providers=[
         ProviderConfig(
             name="textlocal",
             priority=2,
-            credentials={"api_key": api_key, "sender_id": "sender_id"}),
+            credentials={"api_key": "<>", "sender_id": "sender_id"}),
         ProviderConfig(
             name="twofactor",
             priority=1,
-            credentials={"api_key": api_key, "sender_id": "sender_id"})]),
+            credentials={"api_key": "<>", "sender_id": "sender_id"})]),
     email=EmailConfig(providers=[
         ProviderConfig(
             name= "sendgrid",
             priority=1,
-            credentials={"api_key": api_key, "from_email": "from_email"}),
-        )
+            credentials={"api_key": "<>", "from_email": "from_email"})
     ])
 )
 
-NOTIF_CLIENT = NotificationClient(config)
+client = NotificationClient(config)
 
 ```
 
@@ -42,7 +41,8 @@ NOTIF_CLIENT = NotificationClient(config)
 ## Send Email
 
 ```python
-from notify_lib.models import EmailNotification, EmailItem
+from notify_lib.models.notifications import EmailNotification
+from notify_lib.models.items import EmailItem
 
 notification = EmailNotification(from_email="noreply@yourcompany.com")
 
@@ -61,7 +61,8 @@ result = client.email.send(notification)
 ## Send SMS
 
 ```python
-from notify_lib.models import SmsNotification, SmsItem
+from notify_lib.models.notifications import SmsNotification
+from notify_lib.models.items import SmsItem
 from notify_lib.constants import MessageType
 
 notification = SmsNotification(
