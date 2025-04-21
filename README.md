@@ -11,27 +11,30 @@ A custom notification helper to allow sending notifications.
 Create a config object with your vendor credentials:
 
 ```python
-from notify_lib.config import NotifyConfig
+from notify_lib.config import NotifyConfig, ProviderConfig
 from notification_client import NotificationClient
 
 config = NotifyConfig(
-    sms_vendors=[
-        {
-            "name": "textlocal",
-            "api_key": "your_textlocal_api_key",
-            "sender_id": "TXTLCL"
-        }
-    ],
-    email_vendors=[
-        {
-            "name": "sendgrid",
-            "api_key": "your_sendgrid_api_key",
-            "from_email": "noreply@yourcompany.com"
-        }
-    ]
+    sms=SMSConfig(providers=[
+        ProviderConfig(
+            name="textlocal",
+            priority=2,
+            credentials={"api_key": api_key, "sender_id": "sender_id"}),
+        ProviderConfig(
+            name="twofactor",
+            priority=1,
+            credentials={"api_key": api_key, "sender_id": "sender_id"})]),
+    email=EmailConfig(providers=[
+        ProviderConfig(
+            name= "sendgrid",
+            priority=1,
+            credentials={"api_key": api_key, "from_email": "from_email"}),
+        )
+    ])
 )
 
-client = NotificationClient(config)
+NOTIF_CLIENT = NotificationClient(config)
+
 ```
 
 ---
@@ -41,17 +44,14 @@ client = NotificationClient(config)
 ```python
 from notify_lib.models import EmailNotification, EmailItem
 
-notification = EmailNotification(
-    from_email="noreply@yourcompany.com",
-    subject="Welcome",
-    html_content="<p>Thank you for registering.</p>",
-    items=[
-        EmailItem(
-            recipient="user@example.com",
-            variables={"name": "John"}
-        )
-    ]
-)
+notification = EmailNotification(from_email="noreply@yourcompany.com")
+
+notification.add_item(EmailItem(
+    to_email="user@example.com",
+    message="<p>Thank you for registering.</p>",
+    subject="Welcome",  
+    variables={"name": "John"}
+))
 
 result = client.email.send(notification)
 ```
