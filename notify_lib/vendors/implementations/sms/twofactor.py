@@ -95,7 +95,7 @@ class TwoFactor(SmsVendor):
                         phone = "+91" + phone.lstrip("+")
                 template_part = f"/{item.template_name}" if item.template_name else ""
                 api_url = f"{self.api_url_v1}{self.api_key}/SMS/{phone}/{item.otp}{template_part}"
-                response = requests.get(api_url)
+                response = requests.get(api_url, params=item.variables)
                 if response.status_code == 200:
                     try:
                         response_data = response.json()
