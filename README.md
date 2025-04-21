@@ -19,11 +19,11 @@ config = NotifyConfig(
         ProviderConfig(
             name="textlocal",
             priority=2,
-            credentials={"api_key": api_key, "sender": "sender_id"}),
+            credentials={"api_key": api_key, "sender_id": "sender_id"}),
         ProviderConfig(
             name="twofactor",
             priority=1,
-            credentials={"api_key": api_key, "sender": "sender_id"})]),
+            credentials={"api_key": api_key, "sender_id": "sender_id"})]),
     email=EmailConfig(providers=[
         ProviderConfig(
             name= "sendgrid",
