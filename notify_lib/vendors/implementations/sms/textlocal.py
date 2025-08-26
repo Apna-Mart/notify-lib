@@ -1,6 +1,6 @@
 import requests
-import aiohttp
 import asyncio
+import functools
 
 from notify_lib.exceptions import VendorException
 from notify_lib.vendors.interfaces.sms_vendor import SmsVendor
@@ -53,52 +53,52 @@ class TextLocal(SmsVendor):
                 item.error = str(e)
         return notification
 
-    async def send_batch(self, items):
-        results = []
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-            for item in items:
-                task = self._async_send_single(session, item)
-                tasks.append(task)
-            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-            results.extend(batch_results)
-        return results
-
-    async def _async_send_single(self, session, item):
+    def _send_single_sync(self, item):
         try:
-            timeout = aiohttp.ClientTimeout(connect=5, total=10)
+            timeout = (5, 10)
             payload = {
                 "apikey": self.api_key,
                 "numbers": item.recipient,
                 "message": item.message,
                 "sender": self.sender_id
             }
-            async with session.post(self.api_url, data=payload, timeout=timeout) as response:
-                response_text = await response.text()
-                try:
-                    response_data = await response.json()
-                except Exception:
-                    response_data = {}
-                if response.status == 200 and "errors" not in response_data:
-                    item.delivery_status = "SENT"
-                    if "message_id" in response_data:
-                        item.ext_id = str(response_data["message_id"])
-                    elif "messageId" in response_data:
-                        item.ext_id = str(response_data["messageId"])
-                    else:
-                        item.ext_id = "textlocal_sent"
+            response = requests.post(self.api_url, data=payload, timeout=timeout)
+            response_data = response.json() if response.text else {}
+            if response.status_code == 200 and "errors" not in response_data:
+                item.delivery_status = "SENT"
+                if "message_id" in response_data:
+                    item.ext_id = str(response_data["message_id"])
+                elif "messageId" in response_data:
+                    item.ext_id = str(response_data["messageId"])
                 else:
-                    if "errors" in response_data:
-                        error_msg = str(response_data["errors"])
-                    else:
-                        error_msg = f"TextLocal API error: {response.status} - {response_text}"
-                    item.delivery_status = "FAILED"
-                    item.error = error_msg
-                return item
+                    item.ext_id = "textlocal_sent"
+            else:
+                if "errors" in response_data:
+                    error_msg = str(response_data["errors"])
+                else:
+                    error_msg = f"TextLocal API error: {response.status_code} - {response.text}"
+                item.delivery_status = "FAILED"
+                item.error = error_msg
+            return item
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
             return item
+
+    async def send_batch(self, items):
+        loop = asyncio.get_running_loop()
+        tasks = [loop.run_in_executor(None, functools.partial(self._send_single_sync, item)) for item in items]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Normalize exceptions into failed items
+        normalized = []
+        for item, result in zip(items, results):
+            if isinstance(result, Exception):
+                item.delivery_status = "FAILED"
+                item.error = str(result)
+                normalized.append(item)
+            else:
+                normalized.append(result)
+        return normalized
 
     async def async_send(self, notification) -> str:
         all_results = []
