@@ -14,5 +14,4 @@ class MessageType(Enum):
 
 class Provider(Enum):
     TWOFACTOR = "twofactor"
-    TEXTLOCAL = "textlocal"
     SENDGRID = "sendgrid"
