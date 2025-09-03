@@ -6,13 +6,8 @@ A custom notification helper to allow sending notifications.
 
 ## Installation
 
-- Core (SMS support only):
+- Core:
   - `pip install notify_lib`
-- With email via SendGrid:
-  - `pip install notify_lib[email]`
-- Everything:
-  - `pip install notify_lib[all]`
-
 ---
 
 ## Setup Guide
