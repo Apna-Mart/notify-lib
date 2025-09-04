@@ -18,7 +18,7 @@ class SmsItem(NotificationItem):
         super().__init__(phone_number, message)
         self.otp = otp
         self.template_name = template_name
-        self.dlt_data = dlt_data,
+        self.dlt_data = dlt_data
         self.variables = variables
 
 
