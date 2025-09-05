@@ -1,7 +1,6 @@
 from notify_lib.config import NotifyConfig
 from notify_lib.constants import Provider, Channel
 from notify_lib.vendors.implementations.email.sendgrid import SendGridEmail
-from notify_lib.vendors.implementations.sms.textlocal import TextLocal
 from notify_lib.vendors.implementations.sms.twofactor import TwoFactor
 
 
@@ -16,9 +15,7 @@ class VendorFactory:
             sms_providers.sort(key = lambda x: x.priority)
             vendor_lst = []
             for e in sms_providers:
-                if e.name == Provider.TEXTLOCAL.value:
-                    vendor_lst.append(TextLocal(e.credentials))
-                elif e.name == Provider.TWOFACTOR.value:
+                if e.name == Provider.TWOFACTOR.value:
                     vendor_lst.append(TwoFactor(e.credentials))
                 else:
                     raise ValueError(f"Unknown Vendor {e.name} for channel {channel}")

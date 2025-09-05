@@ -1,22 +1,14 @@
 from setuptools import setup, find_packages
 
 
-# Read requirements from requirements.txt
-def parse_requirements(filename):
-    with open(filename, 'r') as f:
-        return [
-            line.strip()
-            for line in f.readlines()
-            if line.strip() and not line.startswith('#')
-        ]
-
-
 setup(
     name="notify_lib",
-    version="1.0.0.4",
+    version="1.1.1",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=parse_requirements('requirements.txt'),
+    install_requires=[
+        "requests>=2.31.0", "sendgrid~=6.11.0"
+    ],
     description="A helper library, which provides multiple notification support",
     license='MIT',
     long_description=open('README.md').read(),

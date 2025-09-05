@@ -1,6 +1,6 @@
 import requests
-import aiohttp
 import asyncio
+import functools
 
 from notify_lib.constants import MessageType
 from notify_lib.exceptions import VendorException
@@ -125,21 +125,7 @@ class TwoFactor(SmsVendor):
                 item.error = str(e)
         return notification
 
-    async def send_batch(self, items):
-        results = []
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-            for item in items:
-                if self.sms_type == "OTP":
-                    task = self._async_send_otp_single(session, item)
-                else:
-                    task = self._async_send_sms_single(session, item)
-                tasks.append(task)
-            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-            results.extend(batch_results)
-        return results
-
-    async def _async_send_sms_single(self, session, item):
+    def _send_sms_single_sync(self, item):
         try:
             phone = item.recipient
             if not phone.startswith("91") and not phone.startswith("+91"):
@@ -157,36 +143,35 @@ class TwoFactor(SmsVendor):
                     payload["peid"] = dlt_data["pe_id"]
                 if "template_id" in dlt_data:
                     payload["ctid"] = dlt_data["template_id"]
-            async with session.post(self.api_url, data=payload) as response:
-                response_text = await response.text()
-                if response.status == 200:
-                    try:
-                        response_data = await response.json()
-                        if response_data.get("Status") == "Success":
-                            item.delivery_status = "SENT"
-                            item.ext_id = str(response_data.get("Details", ""))
-                        else:
-                            error_msg = response_data.get("Details", "Unknown error")
-                            item.delivery_status = "FAILED"
-                            item.error = error_msg
-                    except (ValueError, KeyError) as e:
-                        if "Success" in response_text:
-                            item.delivery_status = "SENT"
-                            item.ext_id = "2factor_sent"
-                        else:
-                            item.delivery_status = "FAILED"
-                            item.error = f"Invalid response: {response_text}"
-                else:
-                    error_msg = f"2Factor API error: {response.status} - {response_text}"
-                    item.delivery_status = "FAILED"
-                    item.error = error_msg
-                return item
+            response = requests.post(self.api_url, data=payload)
+            if response.status_code == 200:
+                try:
+                    response_data = response.json()
+                    if response_data.get("Status") == "Success":
+                        item.delivery_status = "SENT"
+                        item.ext_id = str(response_data.get("Details", ""))
+                    else:
+                        error_msg = response_data.get("Details", "Unknown error")
+                        item.delivery_status = "FAILED"
+                        item.error = error_msg
+                except (ValueError, KeyError):
+                    if "Success" in response.text:
+                        item.delivery_status = "SENT"
+                        item.ext_id = "2factor_sent"
+                    else:
+                        item.delivery_status = "FAILED"
+                        item.error = f"Invalid response: {response.text}"
+            else:
+                error_msg = f"2Factor API error: {response.status_code} - {response.text}"
+                item.delivery_status = "FAILED"
+                item.error = error_msg
+            return item
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
             return item
 
-    async def _async_send_otp_single(self, session, item):
+    def _send_otp_single_sync(self, item):
         try:
             if not item.otp:
                 item.delivery_status = "FAILED"
@@ -200,34 +185,51 @@ class TwoFactor(SmsVendor):
                     phone = "+91" + phone.lstrip("+")
             template_part = f"/{item.template_name}" if item.template_name else ""
             api_url = f"{self.api_url_v1}{self.api_key}/SMS/{phone}/{item.otp}{template_part}"
-            async with session.get(api_url) as response:
-                response_text = await response.text()
-                if response.status == 200:
-                    try:
-                        response_data = await response.json()
-                        if response_data.get("Status") == "Success":
-                            item.delivery_status = "SENT"
-                            item.ext_id = str(response_data.get("Details", ""))
-                        else:
-                            error_msg = response_data.get("Details", "Unknown error")
-                            item.delivery_status = "FAILED"
-                            item.error = error_msg
-                    except (ValueError, KeyError) as e:
-                        if "Success" in response_text:
-                            item.delivery_status = "SENT"
-                            item.ext_id = "2factor_otp_sent"
-                        else:
-                            item.delivery_status = "FAILED"
-                            item.error = f"Invalid response: {response_text}"
-                else:
-                    error_msg = f"2Factor API error: {response.status} - {response_text}"
-                    item.delivery_status = "FAILED"
-                    item.error = error_msg
-                return item
+            response = requests.get(api_url, params=item.variables)
+            if response.status_code == 200:
+                try:
+                    response_data = response.json()
+                    if response_data.get("Status") == "Success":
+                        item.delivery_status = "SENT"
+                        item.ext_id = str(response_data.get("Details", ""))
+                    else:
+                        error_msg = response_data.get("Details", "Unknown error")
+                        item.delivery_status = "FAILED"
+                        item.error = error_msg
+                except (ValueError, KeyError):
+                    if "Success" in response.text:
+                        item.delivery_status = "SENT"
+                        item.ext_id = "2factor_otp_sent"
+                    else:
+                        item.delivery_status = "FAILED"
+                        item.error = f"Invalid response: {response.text}"
+            else:
+                error_msg = f"2Factor API error: {response.status_code} - {response.text}"
+                item.delivery_status = "FAILED"
+                item.error = error_msg
+            return item
         except Exception as e:
             item.delivery_status = "FAILED"
             item.error = str(e)
             return item
+
+    async def send_batch(self, items):
+        loop = asyncio.get_running_loop()
+        if self.sms_type == "OTP":
+            call = self._send_otp_single_sync
+        else:
+            call = self._send_sms_single_sync
+        tasks = [loop.run_in_executor(None, functools.partial(call, item)) for item in items]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        normalized = []
+        for item, result in zip(items, results):
+            if isinstance(result, Exception):
+                item.delivery_status = "FAILED"
+                item.error = str(result)
+                normalized.append(item)
+            else:
+                normalized.append(result)
+        return normalized
 
     async def async_send(self, notification):
         if notification.message_type == MessageType.TRANSACTIONAL.value:

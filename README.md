@@ -4,6 +4,12 @@ A custom notification helper to allow sending notifications.
 
 ---
 
+## Installation
+
+- Core:
+  - `pip install notify_lib`
+---
+
 ## Setup Guide
 
 ### Configuration
